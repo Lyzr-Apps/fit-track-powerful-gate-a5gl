@@ -1,0 +1,30 @@
+{
+  "agents": [
+    {
+      "agent_id": "699d4f2141645707cdaec53a",
+      "name": "Inventory Intelligence Agent",
+      "description": "Monitors and analyzes fitness gear inventory — tracks stock levels, generates reorder alerts when items fall below thresholds, provides sales trend analysis across product categories, and summarizes order status.",
+      "provider": "openai",
+      "model": "gpt-4.1",
+      "temperature": 0.3,
+      "top_p": 1,
+      "agent_type": "json",
+      "has_tools": false,
+      "has_knowledge_base": false,
+      "has_voice": false,
+      "has_image_output": false,
+      "has_file_output": false
+    }
+  ],
+  "workflow": {
+    "nodes": [
+      {"id": "input_node", "type": "Input", "label": "User Query", "nodeCategory": "input"},
+      {"id": "inventory_agent", "type": "Agent", "label": "Inventory Intelligence Agent", "nodeCategory": "agent"},
+      {"id": "output_node", "type": "Output", "label": "Agent Response", "nodeCategory": "end"}
+    ],
+    "edges": [
+      {"source": "input_node", "target": "inventory_agent"},
+      {"source": "inventory_agent", "target": "output_node"}
+    ]
+  }
+}

@@ -1,0 +1,116 @@
+{
+  "agent_name": "Inventory Intelligence Agent",
+  "agent_id": "699d4f2141645707cdaec53a",
+  "description": "Monitors and analyzes fitness gear inventory \u2014 tracks stock levels, generates reorder alerts when items fall below thresholds, provides sales trend analysis across product categories, and summarizes order status.",
+  "agent_type": "json",
+  "accessor": "result",
+  "auto_generated": true,
+  "response_schema": {
+    "message": "string",
+    "metrics": {
+      "totalSKUs": "number",
+      "lowStockCount": "number",
+      "pendingOrders": "number",
+      "topSeller": "string"
+    },
+    "lowStockAlerts": [
+      {
+        "product": "string",
+        "currentStock": "number",
+        "threshold": "number",
+        "status": "string",
+        "priority": "string",
+        "recommendedOrder": "number"
+      }
+    ],
+    "inventoryItems": [
+      {
+        "product": "string",
+        "sku": "string",
+        "category": "string",
+        "currentStock": "number",
+        "reorderThreshold": "number",
+        "status": "string",
+        "lastRestocked": "string"
+      }
+    ],
+    "salesData": [
+      {
+        "product": "string",
+        "unitsSold": "number",
+        "revenue": "number",
+        "trend": "string",
+        "category": "string"
+      }
+    ],
+    "orders": [
+      {
+        "orderId": "string",
+        "date": "string",
+        "itemCount": "number",
+        "status": "string",
+        "supplier": "string",
+        "items": [
+          {
+            "name": "string",
+            "quantity": "number"
+          }
+        ]
+      }
+    ]
+  },
+  "example_response": {
+    "message": "Main response message from the agent",
+    "metrics": {
+      "totalSKUs": 0,
+      "lowStockCount": 0,
+      "pendingOrders": 0,
+      "topSeller": "Name of the top selling product"
+    },
+    "lowStockAlerts": [
+      {
+        "product": "sample string",
+        "currentStock": 0,
+        "threshold": 0,
+        "status": "In Stock, Low, or Out of Stock",
+        "priority": "High, Medium, or Low",
+        "recommendedOrder": 0
+      }
+    ],
+    "inventoryItems": [
+      {
+        "product": "sample string",
+        "sku": "sample string",
+        "category": "sample string",
+        "currentStock": 0,
+        "reorderThreshold": 0,
+        "status": "sample string",
+        "lastRestocked": "sample string"
+      }
+    ],
+    "salesData": [
+      {
+        "product": "sample string",
+        "unitsSold": 0,
+        "revenue": 0,
+        "trend": "up, down, or stable",
+        "category": "sample string"
+      }
+    ],
+    "orders": [
+      {
+        "orderId": "sample string",
+        "date": "sample string",
+        "itemCount": 0,
+        "status": "sample string",
+        "supplier": "sample string",
+        "items": [
+          {
+            "name": "sample string",
+            "quantity": 0
+          }
+        ]
+      }
+    ]
+  }
+}

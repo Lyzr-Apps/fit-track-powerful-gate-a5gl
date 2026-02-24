@@ -1,0 +1,11 @@
+{
+  "nodes": [
+    {"id": "input_node", "type": "Input", "label": "User Query", "nodeCategory": "input"},
+    {"id": "inventory_agent", "type": "Agent", "label": "Inventory Intelligence Agent", "nodeCategory": "agent"},
+    {"id": "output_node", "type": "Output", "label": "Agent Response", "nodeCategory": "end"}
+  ],
+  "edges": [
+    {"source": "input_node", "target": "inventory_agent"},
+    {"source": "inventory_agent", "target": "output_node"}
+  ]
+}

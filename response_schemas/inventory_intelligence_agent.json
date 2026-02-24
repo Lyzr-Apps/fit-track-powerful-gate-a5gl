@@ -1,0 +1,108 @@
+{
+  "agent_name": "Inventory Intelligence Agent",
+  "agent_id": "699d4f2141645707cdaec53a",
+  "agent_type": "json",
+  "accessor": "json",
+  "has_module_outputs": false,
+  "schema": {
+    "type": "object",
+    "properties": {
+      "message": {
+        "type": "string",
+        "description": "Main response message from the agent"
+      },
+      "metrics": {
+        "type": "object",
+        "properties": {
+          "totalSKUs": { "type": "number", "description": "Total number of SKUs tracked" },
+          "lowStockCount": { "type": "number", "description": "Number of items below reorder threshold" },
+          "pendingOrders": { "type": "number", "description": "Number of pending orders" },
+          "topSeller": { "type": "string", "description": "Name of the top selling product" }
+        },
+        "required": ["totalSKUs", "lowStockCount", "pendingOrders", "topSeller"],
+        "additionalProperties": false
+      },
+      "lowStockAlerts": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "product": { "type": "string" },
+            "currentStock": { "type": "number" },
+            "threshold": { "type": "number" },
+            "status": { "type": "string", "description": "In Stock, Low, or Out of Stock" },
+            "priority": { "type": "string", "description": "High, Medium, or Low" },
+            "recommendedOrder": { "type": "number" }
+          },
+          "required": ["product", "currentStock", "threshold", "status", "priority", "recommendedOrder"],
+          "additionalProperties": false
+        },
+        "description": "List of products with low stock"
+      },
+      "inventoryItems": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "product": { "type": "string" },
+            "sku": { "type": "string" },
+            "category": { "type": "string" },
+            "currentStock": { "type": "number" },
+            "reorderThreshold": { "type": "number" },
+            "status": { "type": "string" },
+            "lastRestocked": { "type": "string" }
+          },
+          "required": ["product", "sku", "category", "currentStock", "reorderThreshold", "status", "lastRestocked"],
+          "additionalProperties": false
+        },
+        "description": "Full inventory listing"
+      },
+      "salesData": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "product": { "type": "string" },
+            "unitsSold": { "type": "number" },
+            "revenue": { "type": "number" },
+            "trend": { "type": "string", "description": "up, down, or stable" },
+            "category": { "type": "string" }
+          },
+          "required": ["product", "unitsSold", "revenue", "trend", "category"],
+          "additionalProperties": false
+        },
+        "description": "Sales performance data"
+      },
+      "orders": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "orderId": { "type": "string" },
+            "date": { "type": "string" },
+            "itemCount": { "type": "number" },
+            "status": { "type": "string" },
+            "supplier": { "type": "string" },
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "quantity": { "type": "number" }
+                },
+                "required": ["name", "quantity"],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": ["orderId", "date", "itemCount", "status", "supplier", "items"],
+          "additionalProperties": false
+        },
+        "description": "Order details"
+      }
+    },
+    "required": ["message", "metrics", "lowStockAlerts", "inventoryItems", "salesData", "orders"],
+    "additionalProperties": false
+  }
+}

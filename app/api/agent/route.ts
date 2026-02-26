@@ -95,6 +95,15 @@ function normalizeResponse(parsed: any): NormalizedAgentResponse {
   }
 
   if ('message' in parsed && typeof parsed.message === 'string') {
+    // Check if this object has more than just 'message' — if so, treat the whole object as the result
+    const keys = Object.keys(parsed).filter(k => k !== 'message')
+    if (keys.length > 0) {
+      return {
+        status: 'success',
+        result: parsed,
+        message: parsed.message,
+      }
+    }
     return {
       status: 'success',
       result: { text: parsed.message },

@@ -9,8 +9,6 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   FiPackage,
@@ -33,6 +31,7 @@ import {
   FiArrowDown,
   FiMinus,
   FiLayout,
+  FiMessageSquare,
 } from 'react-icons/fi'
 
 // ---- Constants ----
@@ -97,104 +96,122 @@ interface AgentData {
   orders?: OrderItem[]
 }
 
-// ---- Sample Data ----
-const SAMPLE_DATA: AgentData = {
-  message: 'Here is your current inventory dashboard summary for FitGear Pro.',
-  metrics: {
-    totalSKUs: 248,
-    lowStockCount: 12,
-    pendingOrders: 5,
-    topSeller: 'Resistance Band Set Pro',
-  },
-  lowStockAlerts: [
-    { product: 'Yoga Mat Premium 6mm', currentStock: 8, threshold: 25, status: 'Low', priority: 'High', recommendedOrder: 50 },
-    { product: 'Kettlebell 16kg Cast Iron', currentStock: 3, threshold: 15, status: 'Low', priority: 'High', recommendedOrder: 30 },
-    { product: 'Jump Rope Speed Cable', currentStock: 0, threshold: 20, status: 'Out of Stock', priority: 'High', recommendedOrder: 60 },
-    { product: 'Foam Roller 18"', currentStock: 12, threshold: 20, status: 'Low', priority: 'Medium', recommendedOrder: 25 },
-    { product: 'Wrist Wraps Pair', currentStock: 15, threshold: 30, status: 'Low', priority: 'Medium', recommendedOrder: 40 },
-  ],
-  inventoryItems: [
-    { product: 'Resistance Band Set Pro', sku: 'FG-RBS-001', category: 'Accessories', currentStock: 142, reorderThreshold: 30, status: 'In Stock', lastRestocked: '2026-02-18' },
-    { product: 'Yoga Mat Premium 6mm', sku: 'FG-YMP-002', category: 'Yoga', currentStock: 8, reorderThreshold: 25, status: 'Low', lastRestocked: '2026-01-28' },
-    { product: 'Kettlebell 16kg Cast Iron', sku: 'FG-KB-016', category: 'Weights', currentStock: 3, reorderThreshold: 15, status: 'Low', lastRestocked: '2026-02-05' },
-    { product: 'Dumbbell Set Adjustable 20kg', sku: 'FG-DB-020', category: 'Weights', currentStock: 56, reorderThreshold: 20, status: 'In Stock', lastRestocked: '2026-02-15' },
-    { product: 'Jump Rope Speed Cable', sku: 'FG-JR-001', category: 'Cardio', currentStock: 0, reorderThreshold: 20, status: 'Out of Stock', lastRestocked: '2026-01-10' },
-    { product: 'Pull-Up Bar Doorway', sku: 'FG-PB-001', category: 'Strength', currentStock: 34, reorderThreshold: 10, status: 'In Stock', lastRestocked: '2026-02-12' },
-    { product: 'Foam Roller 18"', sku: 'FG-FR-018', category: 'Recovery', currentStock: 12, reorderThreshold: 20, status: 'Low', lastRestocked: '2026-02-01' },
-    { product: 'Gym Gloves Ventilated', sku: 'FG-GG-001', category: 'Accessories', currentStock: 89, reorderThreshold: 25, status: 'In Stock', lastRestocked: '2026-02-20' },
-  ],
-  salesData: [
-    { product: 'Resistance Band Set Pro', unitsSold: 312, revenue: 9360, trend: 'up', category: 'Accessories' },
-    { product: 'Dumbbell Set Adjustable 20kg', unitsSold: 189, revenue: 14175, trend: 'up', category: 'Weights' },
-    { product: 'Yoga Mat Premium 6mm', unitsSold: 156, revenue: 4680, trend: 'stable', category: 'Yoga' },
-    { product: 'Pull-Up Bar Doorway', unitsSold: 98, revenue: 3920, trend: 'up', category: 'Strength' },
-    { product: 'Jump Rope Speed Cable', unitsSold: 87, revenue: 1305, trend: 'down', category: 'Cardio' },
-    { product: 'Foam Roller 18"', unitsSold: 72, revenue: 2160, trend: 'stable', category: 'Recovery' },
-  ],
-  orders: [
-    { orderId: 'PO-2026-0041', date: '2026-02-22', itemCount: 3, status: 'Pending', supplier: 'FitSupply Co.', items: [{ name: 'Yoga Mat Premium 6mm', quantity: 50 }, { name: 'Foam Roller 18"', quantity: 25 }, { name: 'Jump Rope Speed Cable', quantity: 60 }] },
-    { orderId: 'PO-2026-0040', date: '2026-02-20', itemCount: 2, status: 'In Transit', supplier: 'IronWorks Ltd.', items: [{ name: 'Kettlebell 16kg Cast Iron', quantity: 30 }, { name: 'Dumbbell Set Adjustable 20kg', quantity: 40 }] },
-    { orderId: 'PO-2026-0039', date: '2026-02-18', itemCount: 2, status: 'Completed', supplier: 'GearUp Wholesale', items: [{ name: 'Resistance Band Set Pro', quantity: 100 }, { name: 'Gym Gloves Ventilated', quantity: 75 }] },
-    { orderId: 'PO-2026-0038', date: '2026-02-15', itemCount: 1, status: 'Completed', supplier: 'FitSupply Co.', items: [{ name: 'Pull-Up Bar Doorway', quantity: 20 }] },
-    { orderId: 'PO-2026-0037', date: '2026-02-12', itemCount: 2, status: 'Completed', supplier: 'IronWorks Ltd.', items: [{ name: 'Wrist Wraps Pair', quantity: 40 }, { name: 'Kettlebell 16kg Cast Iron', quantity: 15 }] },
-  ],
-}
-
-// ---- Helpers ----
-function parseAgentResponse(result: any): AgentData | null {
-  let data = result?.response?.result
-  if (!data) return null
-  if (typeof data === 'string') {
+// ---- Robust JSON parsing for agent responses ----
+function tryParseJSON(val: any): any {
+  if (!val) return null
+  if (typeof val === 'object') return val
+  if (typeof val === 'string') {
     try {
-      data = JSON.parse(data)
+      return JSON.parse(val)
     } catch {
+      // Try to extract JSON from markdown code blocks
+      const match = val.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/)
+      if (match) {
+        try {
+          return JSON.parse(match[1].trim())
+        } catch {
+          return null
+        }
+      }
       return null
     }
   }
-  return data as AgentData
+  return null
 }
 
+function parseAgentResponse(result: any): AgentData | null {
+  if (!result) return null
+
+  // Strategy 1: Try result.response.result directly (standard path)
+  let data = tryParseJSON(result?.response?.result)
+  if (data && typeof data === 'object' && (data.message || data.metrics || data.lowStockAlerts || data.inventoryItems)) {
+    return data as AgentData
+  }
+
+  // Strategy 2: Check if result.response.result.text contains JSON
+  const textField = result?.response?.result?.text
+  if (textField) {
+    const parsed = tryParseJSON(textField)
+    if (parsed && typeof parsed === 'object' && (parsed.message || parsed.metrics || parsed.lowStockAlerts)) {
+      return parsed as AgentData
+    }
+  }
+
+  // Strategy 3: Try raw_response field (contains original unprocessed response)
+  if (result?.raw_response) {
+    const rawParsed = tryParseJSON(result.raw_response)
+    if (rawParsed) {
+      // raw_response may be nested: { response: "{ ... }" } or { response: { ... } }
+      let inner = rawParsed?.response
+      if (typeof inner === 'string') {
+        inner = tryParseJSON(inner)
+      }
+      if (inner && typeof inner === 'object' && (inner.message || inner.metrics || inner.lowStockAlerts)) {
+        return inner as AgentData
+      }
+      // Or the raw_response itself might be the data
+      if (rawParsed && typeof rawParsed === 'object' && (rawParsed.message || rawParsed.metrics || rawParsed.lowStockAlerts)) {
+        return rawParsed as AgentData
+      }
+    }
+  }
+
+  // Strategy 4: Check result.response directly
+  const respDirect = tryParseJSON(result?.response)
+  if (respDirect && typeof respDirect === 'object' && (respDirect.message || respDirect.metrics || respDirect.lowStockAlerts)) {
+    return respDirect as AgentData
+  }
+
+  // Strategy 5: Check result.response.message for JSON string
+  const msgField = result?.response?.message
+  if (msgField && typeof msgField === 'string') {
+    const msgParsed = tryParseJSON(msgField)
+    if (msgParsed && typeof msgParsed === 'object' && (msgParsed.metrics || msgParsed.lowStockAlerts)) {
+      return msgParsed as AgentData
+    }
+    // If message is just plain text, return it as the message field
+    return { message: msgField } as AgentData
+  }
+
+  // Strategy 6: Try result itself
+  if (result && typeof result === 'object' && (result.message || result.metrics || result.lowStockAlerts)) {
+    return result as AgentData
+  }
+
+  return null
+}
+
+function extractMessageFromResult(result: any): string {
+  // Try to get any text from the agent response
+  const parsed = parseAgentResponse(result)
+  if (parsed?.message) return parsed.message
+
+  const resp = result?.response
+  if (resp?.message) return resp.message
+  if (resp?.result?.text) return typeof resp.result.text === 'string' ? resp.result.text : JSON.stringify(resp.result.text)
+  if (resp?.result?.message) return resp.result.message
+
+  return 'Response received. Dashboard updated.'
+}
+
+// ---- Markdown renderer ----
 function renderMarkdown(text: string) {
   if (!text) return null
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       {text.split('\n').map((line, i) => {
         if (line.startsWith('### '))
-          return (
-            <h4 key={i} className="font-semibold text-sm mt-3 mb-1">
-              {line.slice(4)}
-            </h4>
-          )
+          return <h4 key={i} className="font-semibold text-sm mt-3 mb-1">{line.slice(4)}</h4>
         if (line.startsWith('## '))
-          return (
-            <h3 key={i} className="font-semibold text-base mt-3 mb-1">
-              {line.slice(3)}
-            </h3>
-          )
+          return <h3 key={i} className="font-semibold text-base mt-3 mb-1">{line.slice(3)}</h3>
         if (line.startsWith('# '))
-          return (
-            <h2 key={i} className="font-bold text-lg mt-4 mb-2">
-              {line.slice(2)}
-            </h2>
-          )
+          return <h2 key={i} className="font-bold text-lg mt-4 mb-2">{line.slice(2)}</h2>
         if (line.startsWith('- ') || line.startsWith('* '))
-          return (
-            <li key={i} className="ml-4 list-disc text-sm">
-              {formatInline(line.slice(2))}
-            </li>
-          )
+          return <li key={i} className="ml-4 list-disc text-sm">{formatInline(line.slice(2))}</li>
         if (/^\d+\.\s/.test(line))
-          return (
-            <li key={i} className="ml-4 list-decimal text-sm">
-              {formatInline(line.replace(/^\d+\.\s/, ''))}
-            </li>
-          )
+          return <li key={i} className="ml-4 list-decimal text-sm">{formatInline(line.replace(/^\d+\.\s/, ''))}</li>
         if (!line.trim()) return <div key={i} className="h-1" />
-        return (
-          <p key={i} className="text-sm">
-            {formatInline(line)}
-          </p>
-        )
+        return <p key={i} className="text-sm">{formatInline(line)}</p>
       })}
     </div>
   )
@@ -204,13 +221,7 @@ function formatInline(text: string) {
   const parts = text.split(/\*\*(.*?)\*\*/g)
   if (parts.length === 1) return text
   return parts.map((part, i) =>
-    i % 2 === 1 ? (
-      <strong key={i} className="font-semibold">
-        {part}
-      </strong>
-    ) : (
-      part
-    )
+    i % 2 === 1 ? <strong key={i} className="font-semibold">{part}</strong> : part
   )
 }
 
@@ -338,11 +349,10 @@ export default function Page() {
   // ---- Navigation ----
   const [currentPage, setCurrentPage] = useState<'dashboard' | 'inventory' | 'sales' | 'orders'>('dashboard')
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [sampleDataOn, setSampleDataOn] = useState(false)
 
   // ---- Agent Data ----
   const [agentData, setAgentData] = useState<AgentData | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeAgentId, setActiveAgentId] = useState<string | null>(null)
 
@@ -368,8 +378,8 @@ export default function Page() {
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set())
   const [salesPeriod, setSalesPeriod] = useState('30d')
 
-  // ---- Effective Data (sample or agent) ----
-  const data: AgentData = sampleDataOn ? SAMPLE_DATA : (agentData ?? {})
+  // ---- Effective Data ----
+  const data: AgentData = agentData ?? {}
   const metrics = data?.metrics
   const lowStockAlerts = Array.isArray(data?.lowStockAlerts) ? data.lowStockAlerts : []
   const inventoryItems = Array.isArray(data?.inventoryItems) ? data.inventoryItems : []
@@ -391,16 +401,24 @@ export default function Page() {
     setError(null)
     setActiveAgentId(AGENT_ID)
     try {
-      const result = await callAIAgent('Give me a complete inventory dashboard summary including metrics, low stock alerts, inventory items, sales data, and recent orders.', AGENT_ID, { session_id: sessionId })
+      const result = await callAIAgent(
+        'Give me a complete inventory dashboard summary. Include all metrics (totalSKUs, lowStockCount, pendingOrders, topSeller), the top 15 low stock alerts sorted by priority, the full inventory items list with all fields, sales data for top products, and any recent orders. Use the real Burnlab inventory data.',
+        AGENT_ID,
+        { session_id: sessionId }
+      )
+
       if (result.success) {
         const parsed = parseAgentResponse(result)
         if (parsed) {
           setAgentData(parsed)
+          if (parsed.message) {
+            setChatMessages([{ role: 'agent', content: parsed.message, timestamp: new Date() }])
+          }
         } else {
-          setError('Could not parse agent response.')
+          setError('Could not parse agent response. Try asking a question in the chat.')
         }
       } else {
-        setError(result.error ?? 'Agent call failed.')
+        setError(result.error ?? 'Agent call failed. Please retry.')
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Network error')
@@ -433,12 +451,22 @@ export default function Page() {
       if (result.success) {
         const parsed = parseAgentResponse(result)
         if (parsed) {
-          setAgentData(parsed)
-          const agentText = parsed?.message ?? 'Response received. Dashboard updated.'
+          // Update dashboard data with any new structured data
+          setAgentData((prev) => {
+            const updated = { ...prev }
+            if (parsed.metrics) updated.metrics = parsed.metrics
+            if (Array.isArray(parsed.lowStockAlerts) && parsed.lowStockAlerts.length > 0) updated.lowStockAlerts = parsed.lowStockAlerts
+            if (Array.isArray(parsed.inventoryItems) && parsed.inventoryItems.length > 0) updated.inventoryItems = parsed.inventoryItems
+            if (Array.isArray(parsed.salesData) && parsed.salesData.length > 0) updated.salesData = parsed.salesData
+            if (Array.isArray(parsed.orders) && parsed.orders.length > 0) updated.orders = parsed.orders
+            if (parsed.message) updated.message = parsed.message
+            return updated
+          })
+          const agentText = parsed?.message ?? extractMessageFromResult(result)
           setChatMessages((prev) => [...prev, { role: 'agent', content: agentText, timestamp: new Date() }])
         } else {
-          const rawText = result?.response?.result?.text ?? result?.response?.message ?? 'Response received.'
-          setChatMessages((prev) => [...prev, { role: 'agent', content: typeof rawText === 'string' ? rawText : JSON.stringify(rawText), timestamp: new Date() }])
+          const fallbackText = extractMessageFromResult(result)
+          setChatMessages((prev) => [...prev, { role: 'agent', content: fallbackText, timestamp: new Date() }])
         }
       } else {
         setChatMessages((prev) => [...prev, { role: 'agent', content: result.error ?? 'Sorry, something went wrong.', timestamp: new Date() }])
@@ -499,6 +527,9 @@ export default function Page() {
     { key: 'orders' as const, label: 'Orders', icon: <FiShoppingCart className="w-5 h-5" /> },
   ]
 
+  // Has any data loaded
+  const hasData = !!(metrics || lowStockAlerts.length > 0 || inventoryItems.length > 0 || salesData.length > 0 || orders.length > 0)
+
   // ====== RENDER ======
   return (
     <ErrorBoundary>
@@ -511,7 +542,7 @@ export default function Page() {
               <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                 <FiPackage className="w-4 h-4 text-primary-foreground" />
               </div>
-              {sidebarOpen && <span className="font-serif font-bold text-lg text-foreground tracking-tight">FitGear</span>}
+              {sidebarOpen && <span className="font-serif font-bold text-lg text-foreground tracking-tight">Burnlab</span>}
             </div>
 
             {/* Nav */}
@@ -535,7 +566,7 @@ export default function Page() {
                   <CardContent className="p-3 space-y-2">
                     <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Agent</p>
                     <div className="flex items-center gap-2">
-                      <div className={cn('w-2 h-2 rounded-full', activeAgentId ? 'bg-emerald-500 animate-pulse' : 'bg-muted-foreground/30')} />
+                      <div className={cn('w-2 h-2 rounded-full', activeAgentId ? 'bg-emerald-500 animate-pulse' : hasData ? 'bg-emerald-500' : 'bg-muted-foreground/30')} />
                       <span className="text-xs text-foreground truncate">Inventory Intelligence</span>
                     </div>
                     <p className="text-[10px] text-muted-foreground font-mono truncate">{AGENT_ID.slice(0, 12)}...</p>
@@ -564,14 +595,14 @@ export default function Page() {
                   {currentPage === 'sales' && 'Sales Analysis'}
                   {currentPage === 'orders' && 'Orders'}
                 </h1>
+                {loading && (
+                  <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
+                    Loading data...
+                  </span>
+                )}
               </div>
-              <div className="flex items-center gap-4">
-                {/* Sample Data Toggle */}
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="sample-toggle" className="text-xs text-muted-foreground">Sample Data</Label>
-                  <Switch id="sample-toggle" checked={sampleDataOn} onCheckedChange={setSampleDataOn} />
-                </div>
-
+              <div className="flex items-center gap-3">
                 {/* Refresh */}
                 <Button variant="ghost" size="sm" onClick={fetchDashboard} disabled={loading} className="text-muted-foreground hover:text-foreground">
                   <FiRefreshCw className={cn('w-4 h-4', loading && 'animate-spin')} />
@@ -592,11 +623,11 @@ export default function Page() {
             {/* Content */}
             <div className="p-6 space-y-6">
               {/* Error banner */}
-              {error && !sampleDataOn && (
+              {error && (
                 <div className="flex items-center gap-3 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-sm text-destructive">
                   <FiAlertTriangle className="w-4 h-4 flex-shrink-0" />
-                  <span>{error}</span>
-                  <Button variant="outline" size="sm" onClick={fetchDashboard} className="ml-auto text-xs">
+                  <span className="flex-1">{error}</span>
+                  <Button variant="outline" size="sm" onClick={fetchDashboard} className="ml-auto text-xs flex-shrink-0">
                     Retry
                   </Button>
                 </div>
@@ -607,7 +638,7 @@ export default function Page() {
                 <div className="space-y-6">
                   {/* Metrics row */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {loading && !sampleDataOn ? (
+                    {loading ? (
                       <>
                         <MetricSkeleton />
                         <MetricSkeleton />
@@ -616,8 +647,8 @@ export default function Page() {
                       </>
                     ) : (
                       <>
-                        <MetricCard icon={<FiBox className="w-5 h-5" />} label="Total SKUs" value={metrics?.totalSKUs ?? 0} />
-                        <MetricCard icon={<FiAlertTriangle className="w-5 h-5" />} label="Low Stock Items" value={metrics?.lowStockCount ?? 0} sub={lowStockAlerts.length > 0 ? `${lowStockAlerts.length} alerts active` : undefined} />
+                        <MetricCard icon={<FiBox className="w-5 h-5" />} label="Total SKUs" value={metrics?.totalSKUs ?? 0} sub="Products tracked" />
+                        <MetricCard icon={<FiAlertTriangle className="w-5 h-5" />} label="Low Stock Items" value={metrics?.lowStockCount ?? lowStockAlerts.length} sub={lowStockAlerts.length > 0 ? `${lowStockAlerts.length} alerts active` : 'All stocked'} />
                         <MetricCard icon={<FiShoppingCart className="w-5 h-5" />} label="Pending Orders" value={metrics?.pendingOrders ?? 0} />
                         <MetricCard icon={<FiTrendingUp className="w-5 h-5" />} label="Top Seller" value={metrics?.topSeller ?? '--'} />
                       </>
@@ -633,15 +664,19 @@ export default function Page() {
                           <CardTitle className="text-base font-serif flex items-center gap-2">
                             <FiAlertTriangle className="w-4 h-4 text-amber-500" />
                             Low Stock Alerts
+                            {lowStockAlerts.length > 0 && (
+                              <Badge variant="secondary" className="text-[10px] ml-1">{lowStockAlerts.length}</Badge>
+                            )}
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
-                          {loading && !sampleDataOn ? (
+                          {loading ? (
                             <TableSkeleton rows={4} />
                           ) : lowStockAlerts.length === 0 ? (
                             <div className="text-center py-8 text-muted-foreground">
                               <FiPackage className="w-8 h-8 mx-auto mb-2 opacity-40" />
                               <p className="text-sm">No low stock alerts right now.</p>
+                              <p className="text-xs mt-1">Ask the agent to check stock levels.</p>
                             </div>
                           ) : (
                             <ScrollArea className="max-h-80">
@@ -661,7 +696,7 @@ export default function Page() {
                                       <Badge variant="outline" className={cn('text-[10px] px-2 py-0.5', getStatusColor(alert?.status ?? ''))}>
                                         {alert?.status ?? 'N/A'}
                                       </Badge>
-                                      <span className="text-[10px] text-muted-foreground whitespace-nowrap">Order: {alert?.recommendedOrder ?? 0}</span>
+                                      <span className="text-[10px] text-muted-foreground whitespace-nowrap">Reorder: {alert?.recommendedOrder ?? 0}</span>
                                     </div>
                                   </div>
                                 ))}
@@ -677,7 +712,7 @@ export default function Page() {
                       <GlassCard className="flex flex-col h-[420px]">
                         <CardHeader className="pb-2 flex-shrink-0">
                           <CardTitle className="text-base font-serif flex items-center gap-2">
-                            <FiSend className="w-4 h-4 text-primary" />
+                            <FiMessageSquare className="w-4 h-4 text-primary" />
                             Ask Agent
                           </CardTitle>
                         </CardHeader>
@@ -687,7 +722,20 @@ export default function Page() {
                             <div className="space-y-3 py-2">
                               {chatMessages.length === 0 && !chatLoading && (
                                 <div className="text-center py-6 text-muted-foreground">
-                                  <p className="text-sm">Ask anything about your inventory, sales, or orders.</p>
+                                  <FiMessageSquare className="w-6 h-6 mx-auto mb-2 opacity-40" />
+                                  <p className="text-sm">Ask about inventory, stock levels,</p>
+                                  <p className="text-sm">reorder needs, or sales trends.</p>
+                                  <div className="mt-3 space-y-1.5">
+                                    {['Which items are out of stock?', 'What should I reorder this week?', 'Show gloves inventory'].map((q) => (
+                                      <button
+                                        key={q}
+                                        onClick={() => { setChatInput(q); }}
+                                        className="block w-full text-xs px-3 py-1.5 rounded-lg bg-secondary/60 hover:bg-secondary text-secondary-foreground transition-colors text-left"
+                                      >
+                                        {q}
+                                      </button>
+                                    ))}
+                                  </div>
                                 </div>
                               )}
                               {chatMessages.map((msg, i) => (
@@ -729,11 +777,11 @@ export default function Page() {
                     </div>
                   </div>
 
-                  {/* Agent message */}
-                  {(data?.message) && (
+                  {/* Agent message summary */}
+                  {data?.message && !loading && (
                     <GlassCard>
                       <CardContent className="p-4">
-                        <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-1">Agent Summary</p>
+                        <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-2">Agent Summary</p>
                         <div className="text-sm text-foreground">{renderMarkdown(data.message)}</div>
                       </CardContent>
                     </GlassCard>
@@ -782,57 +830,81 @@ export default function Page() {
                     </CardContent>
                   </GlassCard>
 
+                  {/* Inventory hint when empty */}
+                  {!loading && inventoryItems.length === 0 && (
+                    <GlassCard>
+                      <CardContent className="p-6 text-center">
+                        <FiBox className="w-10 h-10 mx-auto mb-3 text-muted-foreground opacity-40" />
+                        <p className="text-sm font-medium text-foreground mb-1">No inventory items loaded yet</p>
+                        <p className="text-xs text-muted-foreground mb-3">Ask the agent to provide inventory data</p>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setCurrentPage('dashboard')
+                            setChatInput('Show me the full inventory list with all products, SKUs, categories, stock levels, and status')
+                          }}
+                        >
+                          <FiMessageSquare className="w-3.5 h-3.5 mr-1.5" />
+                          Ask for Inventory Data
+                        </Button>
+                      </CardContent>
+                    </GlassCard>
+                  )}
+
                   {/* Table */}
-                  <GlassCard>
-                    <CardContent className="p-0">
-                      {loading && !sampleDataOn ? (
-                        <TableSkeleton rows={6} />
-                      ) : filteredInventory.length === 0 ? (
-                        <div className="text-center py-12 text-muted-foreground">
-                          <FiBox className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                          <p className="text-sm font-medium">No items match your filter</p>
-                          <Button variant="ghost" size="sm" className="mt-2 text-xs" onClick={() => { setInventorySearch(''); setCategoryFilter('All'); setStatusFilter('All') }}>
-                            Reset Filters
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-sm">
-                            <thead>
-                              <tr className="border-b border-border/60 bg-muted/30">
-                                <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Product</th>
-                                <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">SKU</th>
-                                <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Category</th>
-                                <th className="text-right py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Stock</th>
-                                <th className="text-right py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Reorder At</th>
-                                <th className="text-center py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
-                                <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Last Restocked</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {filteredInventory.map((item, i) => (
-                                <tr key={i} className={cn('border-b border-border/30 transition-colors hover:bg-muted/20', i % 2 === 0 ? 'bg-transparent' : 'bg-muted/10')}>
-                                  <td className="py-3 px-4 font-medium text-foreground">{item?.product ?? '--'}</td>
-                                  <td className="py-3 px-4 font-mono text-xs text-muted-foreground">{item?.sku ?? '--'}</td>
-                                  <td className="py-3 px-4">
-                                    <Badge variant="secondary" className="text-[10px]">{item?.category ?? '--'}</Badge>
-                                  </td>
-                                  <td className="py-3 px-4 text-right font-mono font-semibold">{item?.currentStock ?? 0}</td>
-                                  <td className="py-3 px-4 text-right font-mono text-muted-foreground">{item?.reorderThreshold ?? 0}</td>
-                                  <td className="py-3 px-4 text-center">
-                                    <Badge variant="outline" className={cn('text-[10px] px-2.5 py-0.5', getStatusColor(item?.status ?? ''))}>
-                                      {item?.status ?? '--'}
-                                    </Badge>
-                                  </td>
-                                  <td className="py-3 px-4 text-xs text-muted-foreground">{item?.lastRestocked ?? '--'}</td>
+                  {(loading || inventoryItems.length > 0) && (
+                    <GlassCard>
+                      <CardContent className="p-0">
+                        {loading ? (
+                          <TableSkeleton rows={6} />
+                        ) : filteredInventory.length === 0 ? (
+                          <div className="text-center py-12 text-muted-foreground">
+                            <FiBox className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                            <p className="text-sm font-medium">No items match your filter</p>
+                            <Button variant="ghost" size="sm" className="mt-2 text-xs" onClick={() => { setInventorySearch(''); setCategoryFilter('All'); setStatusFilter('All') }}>
+                              Reset Filters
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="border-b border-border/60 bg-muted/30">
+                                  <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Product</th>
+                                  <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">SKU</th>
+                                  <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Category</th>
+                                  <th className="text-right py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Stock</th>
+                                  <th className="text-right py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Reorder At</th>
+                                  <th className="text-center py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
+                                  <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Last Restocked</th>
                                 </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-                    </CardContent>
-                  </GlassCard>
+                              </thead>
+                              <tbody>
+                                {filteredInventory.map((item, i) => (
+                                  <tr key={i} className={cn('border-b border-border/30 transition-colors hover:bg-muted/20', i % 2 === 0 ? 'bg-transparent' : 'bg-muted/10')}>
+                                    <td className="py-3 px-4 font-medium text-foreground">{item?.product ?? '--'}</td>
+                                    <td className="py-3 px-4 font-mono text-xs text-muted-foreground">{item?.sku ?? '--'}</td>
+                                    <td className="py-3 px-4">
+                                      <Badge variant="secondary" className="text-[10px]">{item?.category ?? '--'}</Badge>
+                                    </td>
+                                    <td className="py-3 px-4 text-right font-mono font-semibold">{item?.currentStock ?? 0}</td>
+                                    <td className="py-3 px-4 text-right font-mono text-muted-foreground">{item?.reorderThreshold ?? 0}</td>
+                                    <td className="py-3 px-4 text-center">
+                                      <Badge variant="outline" className={cn('text-[10px] px-2.5 py-0.5', getStatusColor(item?.status ?? ''))}>
+                                        {item?.status ?? '--'}
+                                      </Badge>
+                                    </td>
+                                    <td className="py-3 px-4 text-xs text-muted-foreground">{item?.lastRestocked ?? '--'}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </CardContent>
+                    </GlassCard>
+                  )}
 
                   <p className="text-xs text-muted-foreground text-center">
                     Showing {filteredInventory.length} of {inventoryItems.length} items
@@ -860,7 +932,7 @@ export default function Page() {
 
                   {/* Summary Cards */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {loading && !sampleDataOn ? (
+                    {loading ? (
                       <>
                         <MetricSkeleton />
                         <MetricSkeleton />
@@ -875,22 +947,37 @@ export default function Page() {
                     )}
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Product performance list */}
-                    <div className="lg:col-span-2">
-                      <GlassCard>
-                        <CardHeader className="pb-3">
-                          <CardTitle className="text-base font-serif">Product Performance</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          {loading && !sampleDataOn ? (
-                            <TableSkeleton rows={5} />
-                          ) : salesData.length === 0 ? (
-                            <div className="text-center py-8 text-muted-foreground">
-                              <FiBarChart2 className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                              <p className="text-sm">No sales data available.</p>
-                            </div>
-                          ) : (
+                  {/* Sales hint when no data */}
+                  {!loading && salesData.length === 0 && (
+                    <GlassCard>
+                      <CardContent className="p-6 text-center">
+                        <FiBarChart2 className="w-10 h-10 mx-auto mb-3 text-muted-foreground opacity-40" />
+                        <p className="text-sm font-medium text-foreground mb-1">No sales data loaded yet</p>
+                        <p className="text-xs text-muted-foreground mb-3">Ask the agent to analyze sales trends</p>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setCurrentPage('dashboard')
+                            setChatInput('Show me sales analysis with top selling products, revenue, and trends by category')
+                          }}
+                        >
+                          <FiMessageSquare className="w-3.5 h-3.5 mr-1.5" />
+                          Ask for Sales Data
+                        </Button>
+                      </CardContent>
+                    </GlassCard>
+                  )}
+
+                  {salesData.length > 0 && (
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                      {/* Product performance list */}
+                      <div className="lg:col-span-2">
+                        <GlassCard>
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-base font-serif">Product Performance</CardTitle>
+                          </CardHeader>
+                          <CardContent>
                             <div className="space-y-2">
                               {salesData
                                 .slice()
@@ -921,23 +1008,17 @@ export default function Page() {
                                   )
                                 })}
                             </div>
-                          )}
-                        </CardContent>
-                      </GlassCard>
-                    </div>
+                          </CardContent>
+                        </GlassCard>
+                      </div>
 
-                    {/* Category Breakdown */}
-                    <div className="lg:col-span-1">
-                      <GlassCard>
-                        <CardHeader className="pb-3">
-                          <CardTitle className="text-base font-serif">Category Breakdown</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          {loading && !sampleDataOn ? (
-                            <TableSkeleton rows={4} />
-                          ) : Object.keys(categoryBreakdown).length === 0 ? (
-                            <p className="text-sm text-muted-foreground text-center py-4">No data</p>
-                          ) : (
+                      {/* Category Breakdown */}
+                      <div className="lg:col-span-1">
+                        <GlassCard>
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-base font-serif">Category Breakdown</CardTitle>
+                          </CardHeader>
+                          <CardContent>
                             <div className="space-y-4">
                               {Object.entries(categoryBreakdown)
                                 .sort((a, b) => b[1] - a[1])
@@ -956,11 +1037,11 @@ export default function Page() {
                                   )
                                 })}
                             </div>
-                          )}
-                        </CardContent>
-                      </GlassCard>
+                          </CardContent>
+                        </GlassCard>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               )}
 
@@ -976,83 +1057,107 @@ export default function Page() {
                     </TabsList>
                   </Tabs>
 
+                  {/* Orders hint when no data */}
+                  {!loading && orders.length === 0 && (
+                    <GlassCard>
+                      <CardContent className="p-6 text-center">
+                        <FiShoppingCart className="w-10 h-10 mx-auto mb-3 text-muted-foreground opacity-40" />
+                        <p className="text-sm font-medium text-foreground mb-1">No order data loaded yet</p>
+                        <p className="text-xs text-muted-foreground mb-3">Ask the agent about pending or recent orders</p>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setCurrentPage('dashboard')
+                            setChatInput('Show me all pending and recent orders with details')
+                          }}
+                        >
+                          <FiMessageSquare className="w-3.5 h-3.5 mr-1.5" />
+                          Ask for Order Data
+                        </Button>
+                      </CardContent>
+                    </GlassCard>
+                  )}
+
                   {/* Orders Table */}
-                  <GlassCard>
-                    <CardContent className="p-0">
-                      {loading && !sampleDataOn ? (
-                        <TableSkeleton rows={5} />
-                      ) : filteredOrders.length === 0 ? (
-                        <div className="text-center py-12 text-muted-foreground">
-                          <FiShoppingCart className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                          <p className="text-sm font-medium">No orders found</p>
-                          {orderTab !== 'All' && (
-                            <Button variant="ghost" size="sm" className="mt-2 text-xs" onClick={() => setOrderTab('All')}>
-                              View All Orders
-                            </Button>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-sm">
-                            <thead>
-                              <tr className="border-b border-border/60 bg-muted/30">
-                                <th className="w-8 py-3 px-3" />
-                                <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Order ID</th>
-                                <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Date</th>
-                                <th className="text-right py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Items</th>
-                                <th className="text-center py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
-                                <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Supplier</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {filteredOrders.map((order, i) => {
-                                const isExpanded = expandedOrders.has(order?.orderId ?? '')
-                                const orderItems = Array.isArray(order?.items) ? order.items : []
-                                return (
-                                  <React.Fragment key={i}>
-                                    <tr
-                                      className={cn('border-b border-border/30 cursor-pointer transition-colors hover:bg-muted/20', i % 2 === 0 ? 'bg-transparent' : 'bg-muted/10')}
-                                      onClick={() => toggleOrder(order?.orderId ?? '')}
-                                    >
-                                      <td className="py-3 px-3 text-center">
-                                        {isExpanded ? <FiChevronDown className="w-4 h-4 text-muted-foreground" /> : <FiChevronRight className="w-4 h-4 text-muted-foreground" />}
-                                      </td>
-                                      <td className="py-3 px-4 font-mono font-medium text-foreground">{order?.orderId ?? '--'}</td>
-                                      <td className="py-3 px-4 text-muted-foreground">{order?.date ?? '--'}</td>
-                                      <td className="py-3 px-4 text-right font-mono">{order?.itemCount ?? 0}</td>
-                                      <td className="py-3 px-4 text-center">
-                                        <Badge variant="outline" className={cn('text-[10px] px-2.5 py-0.5', getStatusColor(order?.status ?? ''))}>
-                                          {order?.status ?? '--'}
-                                        </Badge>
-                                      </td>
-                                      <td className="py-3 px-4 text-muted-foreground">{order?.supplier ?? '--'}</td>
-                                    </tr>
-                                    {isExpanded && orderItems.length > 0 && (
-                                      <tr className="bg-muted/10">
-                                        <td colSpan={6} className="py-0 px-0">
-                                          <div className="px-12 py-3 border-b border-border/20">
-                                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Line Items</p>
-                                            <div className="space-y-1">
-                                              {orderItems.map((lineItem, j) => (
-                                                <div key={j} className="flex items-center justify-between py-1.5 px-3 rounded-lg bg-background/60">
-                                                  <span className="text-sm text-foreground">{lineItem?.name ?? 'Unknown item'}</span>
-                                                  <span className="text-sm font-mono text-muted-foreground">x{lineItem?.quantity ?? 0}</span>
-                                                </div>
-                                              ))}
-                                            </div>
-                                          </div>
+                  {(loading || orders.length > 0) && (
+                    <GlassCard>
+                      <CardContent className="p-0">
+                        {loading ? (
+                          <TableSkeleton rows={5} />
+                        ) : filteredOrders.length === 0 ? (
+                          <div className="text-center py-12 text-muted-foreground">
+                            <FiShoppingCart className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                            <p className="text-sm font-medium">No orders found</p>
+                            {orderTab !== 'All' && (
+                              <Button variant="ghost" size="sm" className="mt-2 text-xs" onClick={() => setOrderTab('All')}>
+                                View All Orders
+                              </Button>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="border-b border-border/60 bg-muted/30">
+                                  <th className="w-8 py-3 px-3" />
+                                  <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Order ID</th>
+                                  <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Date</th>
+                                  <th className="text-right py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Items</th>
+                                  <th className="text-center py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
+                                  <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Supplier</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {filteredOrders.map((order, i) => {
+                                  const isExpanded = expandedOrders.has(order?.orderId ?? '')
+                                  const orderItems = Array.isArray(order?.items) ? order.items : []
+                                  return (
+                                    <React.Fragment key={i}>
+                                      <tr
+                                        className={cn('border-b border-border/30 cursor-pointer transition-colors hover:bg-muted/20', i % 2 === 0 ? 'bg-transparent' : 'bg-muted/10')}
+                                        onClick={() => toggleOrder(order?.orderId ?? '')}
+                                      >
+                                        <td className="py-3 px-3 text-center">
+                                          {isExpanded ? <FiChevronDown className="w-4 h-4 text-muted-foreground" /> : <FiChevronRight className="w-4 h-4 text-muted-foreground" />}
                                         </td>
+                                        <td className="py-3 px-4 font-mono font-medium text-foreground">{order?.orderId ?? '--'}</td>
+                                        <td className="py-3 px-4 text-muted-foreground">{order?.date ?? '--'}</td>
+                                        <td className="py-3 px-4 text-right font-mono">{order?.itemCount ?? 0}</td>
+                                        <td className="py-3 px-4 text-center">
+                                          <Badge variant="outline" className={cn('text-[10px] px-2.5 py-0.5', getStatusColor(order?.status ?? ''))}>
+                                            {order?.status ?? '--'}
+                                          </Badge>
+                                        </td>
+                                        <td className="py-3 px-4 text-muted-foreground">{order?.supplier ?? '--'}</td>
                                       </tr>
-                                    )}
-                                  </React.Fragment>
-                                )
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-                    </CardContent>
-                  </GlassCard>
+                                      {isExpanded && orderItems.length > 0 && (
+                                        <tr className="bg-muted/10">
+                                          <td colSpan={6} className="py-0 px-0">
+                                            <div className="px-12 py-3 border-b border-border/20">
+                                              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Line Items</p>
+                                              <div className="space-y-1">
+                                                {orderItems.map((lineItem, j) => (
+                                                  <div key={j} className="flex items-center justify-between py-1.5 px-3 rounded-lg bg-background/60">
+                                                    <span className="text-sm text-foreground">{lineItem?.name ?? 'Unknown item'}</span>
+                                                    <span className="text-sm font-mono text-muted-foreground">x{lineItem?.quantity ?? 0}</span>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          </td>
+                                        </tr>
+                                      )}
+                                    </React.Fragment>
+                                  )
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </CardContent>
+                    </GlassCard>
+                  )}
 
                   <p className="text-xs text-muted-foreground text-center">
                     Showing {filteredOrders.length} of {orders.length} orders

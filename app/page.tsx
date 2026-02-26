@@ -402,19 +402,23 @@ export default function Page() {
     setActiveAgentId(AGENT_ID)
     try {
       const result = await callAIAgent(
-        'Give me a complete inventory dashboard summary. Include all metrics (totalSKUs, lowStockCount, pendingOrders, topSeller), the top 15 low stock alerts sorted by priority, the full inventory items list with all fields, sales data for top products, and any recent orders. Use the real Burnlab inventory data.',
+        'Provide a complete inventory dashboard summary with all metrics, top 10 low stock alerts by priority, a sample of inventory items across categories, estimated sales data, and any reorder recommendations.',
         AGENT_ID,
         { session_id: sessionId }
       )
 
+      console.log('[FitGear] Agent result:', JSON.stringify(result).substring(0, 500))
+
       if (result.success) {
         const parsed = parseAgentResponse(result)
+        console.log('[FitGear] Parsed data keys:', parsed ? Object.keys(parsed) : 'null')
         if (parsed) {
           setAgentData(parsed)
           if (parsed.message) {
             setChatMessages([{ role: 'agent', content: parsed.message, timestamp: new Date() }])
           }
         } else {
+          console.warn('[FitGear] Could not parse. Full result:', result)
           setError('Could not parse agent response. Try asking a question in the chat.')
         }
       } else {
@@ -448,8 +452,10 @@ export default function Page() {
     setActiveAgentId(AGENT_ID)
     try {
       const result = await callAIAgent(msg, AGENT_ID, { session_id: sessionId })
+      console.log('[FitGear Chat] Result:', JSON.stringify(result).substring(0, 500))
       if (result.success) {
         const parsed = parseAgentResponse(result)
+        console.log('[FitGear Chat] Parsed keys:', parsed ? Object.keys(parsed) : 'null')
         if (parsed) {
           // Update dashboard data with any new structured data
           setAgentData((prev) => {

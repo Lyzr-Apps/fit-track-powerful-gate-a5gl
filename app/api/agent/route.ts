@@ -124,6 +124,13 @@ function normalizeResponse(parsed: any): NormalizedAgentResponse {
 }
 
 /**
+ * GET /api/agent — health check
+ */
+export async function GET() {
+  return NextResponse.json({ status: 'ok', agent: 'ready' })
+}
+
+/**
  * POST /api/agent
  *
  * Two modes, both POST:
@@ -300,14 +307,42 @@ async function pollTask(task_id: string) {
     // Not standard JSON envelope — parseLLMJson will handle it
   }
 
-  const parsed = parseLLMJson(agentResponseRaw)
+  // Try to detect structured JSON schema responses and preserve them as-is
+  // This prevents parseLLMJson from unwrapping/mangling structured agent responses
+  let structuredData: any = null
+  try {
+    const candidate = typeof agentResponseRaw === 'string' ? JSON.parse(agentResponseRaw) : agentResponseRaw
+    if (candidate && typeof candidate === 'object' && !Array.isArray(candidate)) {
+      const schemaKeys = ['metrics', 'lowStockAlerts', 'inventoryItems', 'salesData', 'orders']
+      const hasSchemaFields = schemaKeys.some(k => k in candidate)
+      if (hasSchemaFields) {
+        structuredData = candidate
+      }
+    }
+  } catch {
+    // Not valid JSON — fall through to parseLLMJson
+  }
 
-  const toNormalize =
-    parsed && typeof parsed === 'object' && parsed.success === false && parsed.data === null
-      ? agentResponseRaw
-      : parsed
+  let normalized: NormalizedAgentResponse
 
-  const normalized = normalizeResponse(toNormalize)
+  if (structuredData) {
+    // Structured agent response with known schema fields — preserve all data
+    normalized = {
+      status: 'success',
+      result: structuredData,
+      message: typeof structuredData.message === 'string' ? structuredData.message : undefined,
+    }
+  } else {
+    // Fallback: use parseLLMJson + normalizeResponse for unstructured/text responses
+    const parsed = parseLLMJson(agentResponseRaw)
+
+    const toNormalize =
+      parsed && typeof parsed === 'object' && parsed.success === false && parsed.data === null
+        ? agentResponseRaw
+        : parsed
+
+    normalized = normalizeResponse(toNormalize)
+  }
 
   return NextResponse.json({
     success: true,
